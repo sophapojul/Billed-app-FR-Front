@@ -18,27 +18,37 @@ export default class NewBill {
   handleChangeFile = e => {
     e.preventDefault()
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
+    console.log(file)
     const filePath = e.target.value.split(/\\/g)
-    const fileName = filePath[filePath.length-1]
+    const fileName = filePath[filePath.length - 1];
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
-    formData.append('file', file)
-    formData.append('email', email)
+    if (["jpg", "jpeg", "png"].includes(fileName.split(".")[1])) {
+      formData.append('file', file)
+      formData.append('email', email)
 
-    this.store
-      .bills()
-      .create({
-        data: formData,
-        headers: {
-          noContentType: true
-        }
-      })
-      .then(({fileUrl, key}) => {
-        console.log(fileUrl)
-        this.billId = key
-        this.fileUrl = fileUrl
-        this.fileName = fileName
-      }).catch(error => console.error(error))
+      this.store
+          .bills()
+          .create({
+            data: formData,
+            headers: {
+              noContentType: true
+            }
+          })
+          .then(({fileUrl, key}) => {
+            console.log(this)
+            console.log('fileUrl', fileUrl)
+            console.log('key', key)
+            console.log('fileName', fileName)
+            console.log('filePath', filePath)
+            this.billId = key
+            this.fileUrl = fileUrl
+            this.fileName = fileName
+          }).catch(error => console.error(error))
+    } else {
+      alert("Le fichier n'est pas au bon format, veuillez choisir un fichier au format jpg, jpeg ou png")
+      this.document.querySelector(`input[data-testid="file"]`).value = ""
+    }
   }
   handleSubmit = e => {
     e.preventDefault()
