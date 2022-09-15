@@ -18,37 +18,57 @@ export default class NewBill {
   handleChangeFile = e => {
     e.preventDefault()
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
-    console.log(file)
     const filePath = e.target.value.split(/\\/g)
     const fileName = filePath[filePath.length - 1];
+// test mime type
+        const fileReader = new FileReader();
+        fileReader.onloadend = (event) => {
+          const arr = (new Uint8Array(event.target.result)).subarray(0, 4);
+          const header = arr.reduce((acc, item) => acc + item.toString(16), '');
+          let type = '';
+          // check the magic numbers https://en.wikipedia.org/wiki/List_of_file_signatures
+          switch (header) {
+            case '89504e47':
+              type = 'image/png';
+              break;
+            case 'ffd8ffe0':
+            case 'ffd8ffe1':
+            case 'ffd8ffee':
+            case 'ffd8ffdb':
+              type = 'image/jpeg';
+              break;
+            default:
+              type = 'unknown';
+              break;
+          }
+          if (type !== "image/jpeg" && type !== "image/png") {
+            document.querySelector(`input[data-testid="file"]`).value = "";
+            document.querySelector(`input[data-testid="file"]`).style.backgroundColor = "#f8d7da";
+            alert("Le fichier doit être au format jpeg, jpg ou png")
+          } else {
+            this.fileName = fileName;
+          }
+        };
+fileReader.readAsArrayBuffer(file);
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
-    if (["jpg", "jpeg", "png"].includes(fileName.split(".")[1])) {
       formData.append('file', file)
       formData.append('email', email)
-
-      this.store
-          .bills()
-          .create({
-            data: formData,
-            headers: {
-              noContentType: true
-            }
-          })
-          .then(({fileUrl, key}) => {
-            console.log(this)
-            console.log('fileUrl', fileUrl)
-            console.log('key', key)
-            console.log('fileName', fileName)
-            console.log('filePath', filePath)
-            this.billId = key
-            this.fileUrl = fileUrl
-            this.fileName = fileName
-          }).catch(error => console.error(error))
-    } else {
-      alert("Le fichier n'est pas au bon format, veuillez choisir un fichier au format jpg, jpeg ou png")
-      this.document.querySelector(`input[data-testid="file"]`).value = ""
-    }
+  this.store
+      .bills()
+      .create({
+        data: formData,
+        headers: {
+          noContentType: true
+        }
+      })
+      .then(({fileUrl, key}) => {
+        console.log(this)
+        console.log('fileUrl', fileUrl)
+        this.billId = key
+        this.fileUrl = fileUrl
+        this.fileName = fileName
+      }).catch(error => console.error(error))
   }
   handleSubmit = e => {
     e.preventDefault()
