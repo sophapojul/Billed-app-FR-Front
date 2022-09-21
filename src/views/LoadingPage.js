@@ -1,13 +1,10 @@
-import VerticalLayout from './VerticalLayout.js'
+import VerticalLayout from './VerticalLayout.js';
 
-export default () => {
-
-  return (`
+export default () => (`
     <div class='layout'>
       ${VerticalLayout()}
       <div class='content' id='loading'>
         Loading...
       </div>
     </div>`
-  )
-}
+);
