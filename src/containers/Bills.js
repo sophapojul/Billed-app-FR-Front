@@ -1,6 +1,6 @@
-import { ROUTES_PATH } from '../constants/routes';
-import { formatDate, formatStatus } from '../app/format';
-import Logout from './Logout';
+import { ROUTES_PATH } from '../constants/routes.js';
+import { formatDate, formatStatus } from '../app/format.js';
+import Logout from './Logout.js';
 
 export default class {
   constructor({
@@ -20,6 +20,7 @@ export default class {
     new Logout({ document, localStorage, onNavigate });
   }
 
+  // TODO test
   handleClickNewBill = () => {
     this.onNavigate(ROUTES_PATH.NewBill);
   };
@@ -30,21 +31,23 @@ export default class {
     $('#modaleFile')
       .find('.modal-body')
       .html(`<div style='text-align: center;' class="bill-proof-container"><img width=${imgWidth} src=${billUrl} alt="Bill" /></div>`);
+    // TODO test
     // attach function when DOM ready
-    $(document).ready(() => {
-      $('#modaleFile').modal('show');
-    });
+    if (typeof $('#modaleFile').modal === 'function') $('#modaleFile').modal('show');
+    // $(document).ready(() => {
+    //   $('#modaleFile').modal('show');
+    // });
   };
 
   getBills = () => {
     if (this.store) {
+      console.log('this.store', this.store);
       return this.store
         .bills()
         .list()
+      // TODO test
         .then((snapshot) => {
-        // snapshot.sort((a, b) => {
-        //     return new Date(b.date) - new Date(a.date)
-        // })
+          snapshot.sort((a, b) => new Date(b.date) - new Date(a.date));
           const bills = snapshot
             .map((doc) => {
               try {
@@ -54,8 +57,8 @@ export default class {
                   status: formatStatus(doc.status),
                 };
               } catch (e) {
-              // if for some reason, corrupted data was introduced, we manage here failing
-              // formatDate function log the error and return unformatted date in that case
+                // if for some reason, corrupted data was introduced, we manage here failing
+                // formatDate function log the error and return unformatted date in that case
                 console.log(e, 'for', doc);
                 return {
                   ...doc,
@@ -68,5 +71,6 @@ export default class {
           return bills;
         });
     }
+    return Promise.resolve([]);
   };
 }
