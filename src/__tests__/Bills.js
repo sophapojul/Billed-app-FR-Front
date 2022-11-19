@@ -1,9 +1,9 @@
-import { screen } from '@testing-library/dom';
+import { fireEvent, screen } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import BillsUI from '../views/BillsUI';
 import Bills from '../containers/Bills';
 import { bills } from '../fixtures/bills';
-import { ROUTES_PATH } from '../constants/routes';
+import { ROUTES, ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
 import router from '../app/Router';
 
@@ -50,6 +50,24 @@ describe('Given I am connected as an employee', () => {
       const modale = screen.getByText('Justificatif');
       expect(modale).toBeInTheDocument();
       expect(handleClickIconEye).toHaveBeenCalledTimes(2);
+    });
+    it('should open new page on click on button newBill', () => {
+      document.body.innerHTML = BillsUI({ data: bills });
+      const bill = new Bills({
+        document,
+        onNavigate: (pathname) => {
+          document.body.innerHTML = ROUTES({ pathname });
+        },
+        store: null,
+        localStorage: window.localStorage,
+      });
+      const handleClickNewBill = jest.fn(bill.handleClickNewBill);
+      const newBillBtn = screen.getByTestId('btn-new-bill');
+      newBillBtn.addEventListener('click', handleClickNewBill);
+      // userEvent.click(newBillBtn);
+      fireEvent.click(newBillBtn);
+      expect(handleClickNewBill).toHaveBeenCalled();
+      expect(screen.getByText(/Envoyer une note de frais/)).toBeInTheDocument();
     });
   });
 });
