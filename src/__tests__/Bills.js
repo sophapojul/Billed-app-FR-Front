@@ -69,5 +69,41 @@ describe('Given I am connected as an employee', () => {
       expect(handleClickNewBill).toHaveBeenCalled();
       expect(screen.getByText(/Envoyer une note de frais/)).toBeInTheDocument();
     });
+    test('log the error and return unformatted date in the case of corrupted data', async () => {
+      const bill = [{
+        id: '1',
+        status: 'pending',
+        pct: 20,
+        amount: 400,
+        email: 'a@a',
+        name: 'a',
+        date: '2020-05-32',
+        commentAdmin: 'ok',
+        vat: '40',
+        fileName: 'preview-facture-free-201801-pdf-1.jpg',
+        fileUrl: 'https://storage.googleapis.com/billable-avatars/preview-facture-free-201801-pdf-1.jpg',
+        commentary: 'ok',
+        type: 'Restaurants et bars',
+      }];
+      const consoleSpy = jest.spyOn(console, 'log');
+      const corruptedBill = {
+        bills() {
+          return {
+            list() {
+              return Promise.resolve(bill);
+            },
+          };
+        },
+      };
+      const newBill = new Bills({
+        document,
+        onNavigate: null,
+        store: corruptedBill,
+        localStorage: window.localStorage,
+      });
+      const result = await newBill.getBills();
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result[0].date).toBe('2020-05-32');
+    });
   });
 });
