@@ -1,24 +1,22 @@
 import { screen } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import BillsUI from '../views/BillsUI';
+import Bills from '../containers/Bills';
 import { bills } from '../fixtures/bills';
 import { ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
-
 import router from '../app/Router';
-import Bills from '../containers/Bills';
-
-const onNavigate = (pathname) => {
-  document.body.innerHTML = ROUTES_PATH({ pathname });
-};
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
-    test('Then bill icon in vertical layout should be highlighted', async () => {
+    beforeEach(() => {
       Object.defineProperty(window, 'localStorage', { value: localStorageMock });
       window.localStorage.setItem('user', JSON.stringify({
         type: 'Employee',
+        email: 'a@a',
       }));
+    });
+    test('Then bill icon in vertical layout should be highlighted', async () => {
       const root = document.createElement('div');
       root.setAttribute('id', 'root');
       document.body.append(root);
@@ -35,19 +33,23 @@ describe('Given I am connected as an employee', () => {
       const datesSorted = [...dates].sort(antiChrono);
       expect(dates).toEqual(datesSorted);
     });
-    it('should open modal on click', () => {
+    it('should open modal on click on eye icon', async () => {
       document.body.innerHTML = BillsUI({ data: bills });
       const bill = new Bills({
         document,
-        onNavigate,
-        firestore: null,
+        onNavigate: null,
+        store: null,
         localStorage: window.localStorage,
       });
       const iconEye = screen.getAllByTestId('icon-eye')[0];
-      const handleClickIconEye = jest.fn(bill.handleClickIconEye(iconEye));
-      iconEye.addEventListener('click', handleClickIconEye);
+      const handleClickIconEye = jest.spyOn(bill, 'handleClickIconEye');
+      iconEye.addEventListener('click', () => {
+        bill.handleClickIconEye(iconEye);
+      });
       userEvent.click(iconEye);
-      expect(handleClickIconEye).toHaveBeenCalled();
+      const modale = screen.getByText('Justificatif');
+      expect(modale).toBeInTheDocument();
+      expect(handleClickIconEye).toHaveBeenCalledTimes(2);
     });
   });
 });
