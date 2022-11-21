@@ -4,11 +4,11 @@
 
 import { fireEvent, screen } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
-import NewBillUI from '../views/NewBillUI.js';
-import NewBill from '../containers/NewBill.js';
-import { localStorageMock } from '../__mocks__/localStorage.js';
-import storeMock from '../__mocks__/store.js';
-import { ROUTES } from '../constants/routes.js';
+import NewBillUI from '../views/NewBillUI';
+import NewBill from '../containers/NewBill';
+import { localStorageMock } from '../__mocks__/localStorage';
+import storeMock from '../__mocks__/store';
+import { ROUTES } from '../constants/routes';
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on NewBill Page', () => {
@@ -18,8 +18,7 @@ describe('Given I am connected as an employee', () => {
         type: 'Employee',
         email: 'a@a',
       }));
-      const html = NewBillUI();
-      document.body.innerHTML = html;
+      document.body.innerHTML = NewBillUI();
     });
     test('change file handler should alert if the file format is not supported', () => {
       const onNavigate = (pathname) => {
@@ -31,16 +30,18 @@ describe('Given I am connected as an employee', () => {
         store: storeMock,
         localStorage: window.localStorage,
       });
-      jest.spyOn(window, 'alert').mockImplementation(() => {});
       const handleChangeFile = jest.fn(newBill.handleChangeFile);
+      const spyAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
       const blob = new Blob([''], { type: 'text/html' });
       const file = new File([blob], 'index.html', { type: 'text/html' });
       const input = screen.getByTestId('file');
       input.addEventListener('change', handleChangeFile);
       fireEvent.change(input, { target: { files: [file] } });
       userEvent.upload(input, file);
-      expect(handleChangeFile).toHaveBeenCalled();
-      expect(window.alert).toHaveBeenCalledWith('Format de fichier non supporté, le fichier doit être au format jpeg, jpg ou png');
+      expect(handleChangeFile).toHaveBeenCalledTimes(2);
+      expect(spyAlert).toHaveBeenCalledWith('Format de fichier non supporté, le fichier doit être au format jpeg, jpg ou png');
+      spyAlert.mockReset();
+      spyAlert.mockRestore();
     });
     test('change file handler should display the file name if the file format is supported', () => {
       const onNavigate = (pathname) => {
@@ -59,7 +60,7 @@ describe('Given I am connected as an employee', () => {
       input.addEventListener('change', handleChangeFile);
       fireEvent.change(input, { target: { files: [file] } });
       userEvent.upload(input, file);
-      expect(handleChangeFile).toHaveBeenCalled();
+      expect(handleChangeFile).toHaveBeenCalledTimes(2);
     });
   });
 });
