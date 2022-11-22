@@ -50,5 +50,21 @@ describe('Given I am connected as an employee', () => {
       expect(handleClickIconEye).toHaveBeenCalledTimes(iconEyes.length);
       expect($.fn.modal).toHaveBeenCalled();
     });
+    it('should open new page on click on button newBill', () => {
+      document.body.innerHTML = BillsUI({ data: bills });
+      const bill = new Bills({
+        document,
+        onNavigate: (pathname) => {
+          document.body.innerHTML = ROUTES({ pathname });
+        },
+        store: null,
+        localStorage: window.localStorage,
+      });
+      const handleClickNewBill = jest.fn(bill.handleClickNewBill);
+      const newBillBtn = screen.getByTestId('btn-new-bill');
+      newBillBtn.addEventListener('click', handleClickNewBill);
+      fireEvent.click(newBillBtn);
+      expect(handleClickNewBill).toHaveBeenCalled();
+    });
   });
 });
