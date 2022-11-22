@@ -120,6 +120,51 @@ describe('Given I am a user connected as Employee', () => {
         const message = await screen.findByText(/Erreur 500/i);
         expect(message).toBeInTheDocument();
       });
+      test('if the mockStore if empty it return an empty array', async () => {
+        const billWithEmptyStore = new Bills({
+          document, onNavigate: null, mockStore: null, localStorage: null,
+        });
+        await expect(billWithEmptyStore.getBills()).resolves.toEqual([]);
+        window.onNavigate(ROUTES_PATH.Bills);
+        document.body.innerHTML = BillsUI({ data: [] });
+        expect(screen.queryByTestId('icon-eye')).not.toBeInTheDocument();
+      });
+      test('log the error and return unformatted date in the case of corrupted data', async () => {
+        const bill = [{
+          id: '1',
+          status: 'pending',
+          pct: 20,
+          amount: 400,
+          email: 'a@a',
+          name: 'a',
+          date: '2020-05-32',
+          commentAdmin: 'ok',
+          vat: '40',
+          fileName: 'preview-facture-free-201801-pdf-1.jpg',
+          fileUrl: 'https://storage.googleapis.com/billable-avatars/preview-facture-free-201801-pdf-1.jpg',
+          commentary: 'ok',
+          type: 'Restaurants et bars',
+        }];
+        const consoleSpy = jest.spyOn(console, 'log');
+        const corruptedBill = {
+          bills() {
+            return {
+              list() {
+                return Promise.resolve(bill);
+              },
+            };
+          },
+        };
+        const newBill = new Bills({
+          document,
+          onNavigate: null,
+          store: corruptedBill,
+          localStorage: window.localStorage,
+        });
+        const result = await newBill.getBills();
+        expect(consoleSpy).toHaveBeenCalled();
+        expect(result[0].date).toBe(bill[0].date);
+      });
     });
   });
 });
