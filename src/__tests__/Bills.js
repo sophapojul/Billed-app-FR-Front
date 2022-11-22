@@ -101,5 +101,25 @@ describe('Given I am a user connected as Employee', () => {
       const tbody = await screen.findByTestId('tbody');
       expect(tbody.children.length).toBe(4);
     });
+    describe('When an error occurs on API', () => {
+      test('fetches bills from an API and fails with 404 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => ({
+          list: () => Promise.reject(new Error('Erreur 404')),
+        }));
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = await screen.findByText(/Erreur 404/i);
+        expect(message).toBeInTheDocument();
+      });
+      test('fetches messages from an API and fails with 500 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => ({
+          list: () => Promise.reject(new Error('Erreur 500')),
+        }));
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = await screen.findByText(/Erreur 500/i);
+        expect(message).toBeInTheDocument();
+      });
+    });
   });
 });
