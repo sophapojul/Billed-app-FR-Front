@@ -1,16 +1,11 @@
-import { screen } from '@testing-library/dom';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, screen } from '@testing-library/dom';
 import BillsUI from '../views/BillsUI';
 import { bills } from '../fixtures/bills';
-import { ROUTES_PATH } from '../constants/routes';
+import { ROUTES, ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
-
 import router from '../app/Router';
 import Bills from '../containers/Bills';
-
-const onNavigate = (pathname) => {
-  document.body.innerHTML = ROUTES_PATH({ pathname });
-};
+import mockStore from '../__mocks__/store';
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
@@ -35,19 +30,25 @@ describe('Given I am connected as an employee', () => {
       const datesSorted = [...dates].sort(antiChrono);
       expect(dates).toEqual(datesSorted);
     });
-    it('should open modal on click', () => {
-      document.body.innerHTML = BillsUI({ data: bills });
+    it('should open modal on click on eye icon', () => {
       const bill = new Bills({
         document,
-        onNavigate,
-        firestore: null,
+        onNavigate: (pathname) => {
+          document.body.innerHTML = ROUTES({ pathname });
+        },
+        store: mockStore,
         localStorage: window.localStorage,
       });
-      const iconEye = screen.getAllByTestId('icon-eye')[0];
-      const handleClickIconEye = jest.fn(bill.handleClickIconEye(iconEye));
-      iconEye.addEventListener('click', handleClickIconEye);
-      userEvent.click(iconEye);
-      expect(handleClickIconEye).toHaveBeenCalled();
+      const iconEyes = screen.getAllByTestId('icon-eye');
+      const handleClickIconEye = jest.fn(bill.handleClickIconEye);
+      $.fn.modal = jest.fn();
+      for (let i = 0; i < iconEyes.length; i++) {
+        const iconEye = iconEyes[i];
+        handleClickIconEye(iconEye);
+        fireEvent.click(iconEye);
+      }
+      expect(handleClickIconEye).toHaveBeenCalledTimes(iconEyes.length);
+      expect($.fn.modal).toHaveBeenCalled();
     });
   });
 });
