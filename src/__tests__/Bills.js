@@ -3,9 +3,11 @@ import BillsUI from '../views/BillsUI';
 import { bills } from '../fixtures/bills';
 import { ROUTES, ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
-import router from '../app/Router';
 import Bills from '../containers/Bills';
-import mockStore from '../__mocks__/store';
+import mockStore from '../__mocks__/store'; // import mockStore before router
+import router from '../app/Router';
+
+jest.mock('../app/Store', () => mockStore);
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
@@ -65,6 +67,39 @@ describe('Given I am connected as an employee', () => {
       newBillBtn.addEventListener('click', handleClickNewBill);
       fireEvent.click(newBillBtn);
       expect(handleClickNewBill).toHaveBeenCalled();
+    });
+  });
+});
+
+// test d'intégation GET
+describe('Given I am a user connected as Employee', () => {
+  beforeEach(() => {
+    jest.spyOn(mockStore, 'bills');
+    Object.defineProperty(
+      window,
+      'localStorage',
+      { value: localStorageMock },
+    );
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee',
+      email: 'a@a',
+    }));
+    const root = document.createElement('div');
+    root.setAttribute('id', 'root');
+    document.body.appendChild(root);
+    router();
+  });
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
+  });
+  describe('When I navigate to Bills Page', () => {
+    test('fetches bills from mock API GET', async () => {
+      window.onNavigate(ROUTES_PATH.Bills);
+      await screen.findByText('Mes notes de frais');
+      document.body.innerHTML = BillsUI({ data: bills });
+      const tbody = await screen.findByTestId('tbody');
+      expect(tbody.children.length).toBe(4);
     });
   });
 });
