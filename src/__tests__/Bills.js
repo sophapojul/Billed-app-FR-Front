@@ -1,22 +1,21 @@
 import { fireEvent, screen } from '@testing-library/dom';
-import userEvent from '@testing-library/user-event';
 import BillsUI from '../views/BillsUI';
-import Bills from '../containers/Bills';
 import { bills } from '../fixtures/bills';
 import { ROUTES, ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
+import Bills from '../containers/Bills';
+import mockStore from '../__mocks__/store'; // import mockStore before router
 import router from '../app/Router';
+
+jest.mock('../app/Store', () => mockStore);
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on Bills Page', () => {
-    beforeEach(() => {
+    test('Then bill icon in vertical layout should be highlighted', async () => {
       Object.defineProperty(window, 'localStorage', { value: localStorageMock });
       window.localStorage.setItem('user', JSON.stringify({
         type: 'Employee',
-        email: 'a@a',
       }));
-    });
-    test('Then bill icon in vertical layout should be highlighted', async () => {
       const root = document.createElement('div');
       root.setAttribute('id', 'root');
       document.body.append(root);
@@ -33,23 +32,25 @@ describe('Given I am connected as an employee', () => {
       const datesSorted = [...dates].sort(antiChrono);
       expect(dates).toEqual(datesSorted);
     });
-    it('should open modal on click on eye icon', async () => {
-      document.body.innerHTML = BillsUI({ data: bills });
+    it('should open modal on click on eye icon', () => {
       const bill = new Bills({
         document,
-        onNavigate: null,
-        store: null,
+        onNavigate: (pathname) => {
+          document.body.innerHTML = ROUTES({ pathname });
+        },
+        store: mockStore,
         localStorage: window.localStorage,
       });
-      const iconEye = screen.getAllByTestId('icon-eye')[0];
-      const handleClickIconEye = jest.spyOn(bill, 'handleClickIconEye');
-      iconEye.addEventListener('click', () => {
-        bill.handleClickIconEye(iconEye);
-      });
-      userEvent.click(iconEye);
-      const modale = screen.getByText('Justificatif');
-      expect(modale).toBeInTheDocument();
-      expect(handleClickIconEye).toHaveBeenCalledTimes(2);
+      const iconEyes = screen.getAllByTestId('icon-eye');
+      const handleClickIconEye = jest.fn(bill.handleClickIconEye);
+      $.fn.modal = jest.fn();
+      for (let i = 0; i < iconEyes.length; i++) {
+        const iconEye = iconEyes[i];
+        handleClickIconEye(iconEye);
+        fireEvent.click(iconEye);
+      }
+      expect(handleClickIconEye).toHaveBeenCalledTimes(iconEyes.length);
+      expect($.fn.modal).toHaveBeenCalled();
     });
     it('should open new page on click on button newBill', () => {
       document.body.innerHTML = BillsUI({ data: bills });
@@ -64,46 +65,106 @@ describe('Given I am connected as an employee', () => {
       const handleClickNewBill = jest.fn(bill.handleClickNewBill);
       const newBillBtn = screen.getByTestId('btn-new-bill');
       newBillBtn.addEventListener('click', handleClickNewBill);
-      // userEvent.click(newBillBtn);
       fireEvent.click(newBillBtn);
       expect(handleClickNewBill).toHaveBeenCalled();
-      expect(screen.getByText(/Envoyer une note de frais/)).toBeInTheDocument();
     });
-    test('log the error and return unformatted date in the case of corrupted data', async () => {
-      const bill = [{
-        id: '1',
-        status: 'pending',
-        pct: 20,
-        amount: 400,
-        email: 'a@a',
-        name: 'a',
-        date: '2020-05-32',
-        commentAdmin: 'ok',
-        vat: '40',
-        fileName: 'preview-facture-free-201801-pdf-1.jpg',
-        fileUrl: 'https://storage.googleapis.com/billable-avatars/preview-facture-free-201801-pdf-1.jpg',
-        commentary: 'ok',
-        type: 'Restaurants et bars',
-      }];
-      const consoleSpy = jest.spyOn(console, 'log');
-      const corruptedBill = {
-        bills() {
-          return {
-            list() {
-              return Promise.resolve(bill);
-            },
-          };
-        },
-      };
-      const newBill = new Bills({
-        document,
-        onNavigate: null,
-        store: corruptedBill,
-        localStorage: window.localStorage,
+  });
+});
+
+// test d'intégation GET
+describe('Given I am a user connected as Employee', () => {
+  beforeEach(() => {
+    jest.spyOn(mockStore, 'bills');
+    Object.defineProperty(
+      window,
+      'localStorage',
+      { value: localStorageMock },
+    );
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee',
+      email: 'a@a',
+    }));
+    const root = document.createElement('div');
+    root.setAttribute('id', 'root');
+    document.body.appendChild(root);
+    router();
+  });
+  afterEach(() => {
+    jest.resetAllMocks();
+    jest.restoreAllMocks();
+  });
+  describe('When I navigate to Bills Page', () => {
+    test('fetches bills from mock API GET', async () => {
+      window.onNavigate(ROUTES_PATH.Bills);
+      await screen.findByText('Mes notes de frais');
+      document.body.innerHTML = BillsUI({ data: bills });
+      const tbody = await screen.findByTestId('tbody');
+      expect(tbody.children.length).toBe(4);
+    });
+    describe('When an error occurs on API', () => {
+      test('fetches bills from an API and fails with 404 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => ({
+          list: () => Promise.reject(new Error('Erreur 404')),
+        }));
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = await screen.findByText(/Erreur 404/i);
+        expect(message).toBeInTheDocument();
       });
-      const result = await newBill.getBills();
-      expect(consoleSpy).toHaveBeenCalled();
-      expect(result[0].date).toBe('2020-05-32');
+      test('fetches messages from an API and fails with 500 message error', async () => {
+        mockStore.bills.mockImplementationOnce(() => ({
+          list: () => Promise.reject(new Error('Erreur 500')),
+        }));
+        window.onNavigate(ROUTES_PATH.Bills);
+        await new Promise(process.nextTick);
+        const message = await screen.findByText(/Erreur 500/i);
+        expect(message).toBeInTheDocument();
+      });
+      test('if the mockStore if empty it return an empty array', async () => {
+        const billWithEmptyStore = new Bills({
+          document, onNavigate: null, mockStore: null, localStorage: null,
+        });
+        await expect(billWithEmptyStore.getBills()).resolves.toEqual([]);
+        window.onNavigate(ROUTES_PATH.Bills);
+        document.body.innerHTML = BillsUI({ data: [] });
+        expect(screen.queryByTestId('icon-eye')).not.toBeInTheDocument();
+      });
+      test('log the error and return unformatted date in the case of corrupted data', async () => {
+        const bill = [{
+          id: '1',
+          status: 'pending',
+          pct: 20,
+          amount: 400,
+          email: 'a@a',
+          name: 'a',
+          date: '2020-05-32',
+          commentAdmin: 'ok',
+          vat: '40',
+          fileName: 'preview-facture-free-201801-pdf-1.jpg',
+          fileUrl: 'https://storage.googleapis.com/billable-avatars/preview-facture-free-201801-pdf-1.jpg',
+          commentary: 'ok',
+          type: 'Restaurants et bars',
+        }];
+        const consoleSpy = jest.spyOn(console, 'log');
+        const corruptedBill = {
+          bills() {
+            return {
+              list() {
+                return Promise.resolve(bill);
+              },
+            };
+          },
+        };
+        const newBill = new Bills({
+          document,
+          onNavigate: null,
+          store: corruptedBill,
+          localStorage: window.localStorage,
+        });
+        const result = await newBill.getBills();
+        expect(consoleSpy).toHaveBeenCalled();
+        expect(result[0].date).toBe(bill[0].date);
+      });
     });
   });
 });
