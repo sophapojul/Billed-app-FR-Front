@@ -22,8 +22,7 @@ export default class NewBill {
     e.preventDefault();
     const file = this.document.querySelector('input[data-testid="file"]').files[0];
     // check mime type file
-    const fileTypesEnabled = ['image/png', 'image/jpg', 'image/jpeg'];
-    if (!fileTypesEnabled.includes(file.type)) {
+    if (!(/(jpe?g|png)$/i.test(file.type))) {
       alert('Format de fichier non supporté, le fichier doit être au format jpeg, jpg ou png');
       this.document.querySelector('input[data-testid="file"]').value = '';
     } else {
