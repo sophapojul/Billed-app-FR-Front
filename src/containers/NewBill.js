@@ -30,6 +30,7 @@ export default class NewBill {
       const { email } = JSON.parse(localStorage.getItem('user'));
       formData.append('file', file);
       formData.append('email', email);
+      // this.fileUrl = 'https://mock.api.com';
       this.store
         .bills()
         .create({
@@ -39,9 +40,8 @@ export default class NewBill {
           },
         })
         .then(({ key, fileName, filePath: fileUrl }) => {
-          console.log('fileUrl', fileUrl);
+          console.log(fileUrl);
           this.billId = key;
-          this.fileUrl = fileUrl;
           this.fileName = fileName;
         }).catch((error) => console.error(error));
     }
@@ -49,7 +49,6 @@ export default class NewBill {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    console.log('e.target.querySelector(`input[data-testid="datepicker"]`).value', e.target.querySelector('input[data-testid="datepicker"]').value);
     const { email } = JSON.parse(localStorage.getItem('user'));
     const bill = {
       email,
