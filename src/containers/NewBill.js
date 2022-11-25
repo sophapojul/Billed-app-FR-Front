@@ -21,8 +21,6 @@ export default class NewBill {
   handleChangeFile = (e) => {
     e.preventDefault();
     const file = this.document.querySelector('input[data-testid="file"]').files[0];
-    const filePath = e.target.value.split(/\\/g);
-    const fileName = filePath[filePath.length - 1];
     // check mime type file
     const fileTypesEnabled = ['image/png', 'image/jpg', 'image/jpeg'];
     if (!fileTypesEnabled.includes(file.type)) {
@@ -41,7 +39,7 @@ export default class NewBill {
             noContentType: true,
           },
         })
-        .then(({ fileUrl, key }) => {
+        .then(({ key, fileName, filePath: fileUrl }) => {
           console.log('fileUrl', fileUrl);
           this.billId = key;
           this.fileUrl = fileUrl;
