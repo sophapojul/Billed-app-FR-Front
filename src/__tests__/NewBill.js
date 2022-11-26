@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import NewBillUI from '../views/NewBillUI';
 import NewBill from '../containers/NewBill';
 import { localStorageMock } from '../__mocks__/localStorage';
-import storeMock from '../__mocks__/store';
+import mockStore from '../__mocks__/store';
 import { ROUTES } from '../constants/routes';
 
 describe('Given I am connected as an employee', () => {
@@ -27,7 +27,7 @@ describe('Given I am connected as an employee', () => {
       const newBill = new NewBill({
         document,
         onNavigate,
-        store: storeMock,
+        store: mockStore,
         localStorage: window.localStorage,
       });
       const handleChangeFile = jest.fn(newBill.handleChangeFile);
@@ -50,7 +50,7 @@ describe('Given I am connected as an employee', () => {
       const newBill = new NewBill({
         document,
         onNavigate,
-        store: storeMock,
+        store: mockStore,
         localStorage: window.localStorage,
       });
       const handleChangeFile = jest.fn(newBill.handleChangeFile);
@@ -69,7 +69,7 @@ describe('Given I am connected as an employee', () => {
       const newBill = new NewBill({
         document,
         onNavigate,
-        store: storeMock,
+        store: mockStore,
         localStorage: window.localStorage,
       });
       const handleSubmit = jest.fn(newBill.handleSubmit);
