@@ -156,5 +156,23 @@ describe('Given I am connected as an employee', () => {
       mockStore.bills().update = jest.fn().mockResolvedValue(newBill);
       await expect(mockStore.bills().update()).resolves.toEqual(newBill);
     });
+    it('should call updateBill but failed', async () => {
+      const spyConsoleError = jest.spyOn(global.console, 'error').mockImplementation();
+      const expectedError = await new Error('Erreur');
+      mockStore.bills().update = jest.fn().mockRejectedValue(expectedError);
+      await expect(mockStore.bills().update()).rejects.toEqual(expectedError);
+      /* mockStore.bills().update().catch((e) => {
+            console.error(e);
+            expect(e).toEqual(expectedError);
+          }); */
+      try {
+        await mockStore.bills().update();
+      } catch (e) {
+        console.error(e);
+        expect(e).toEqual(expectedError);
+      }
+      expect(spyConsoleError).toHaveBeenCalledWith(expectedError);
+      spyConsoleError.mockRestore();
+    });
   });
 });
