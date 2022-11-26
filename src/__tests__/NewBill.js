@@ -126,5 +126,18 @@ describe('Given I am connected as an employee', () => {
       await expect(mockStore.bills().create()).resolves.toEqual(value);
       await expect(mockStore.bills().create).toHaveBeenCalledTimes(1);
     });
+    it('should create a new bill but failed', async () => {
+      const spyConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const expectedError = new Error('Erreur lors de la création de la note de frais');
+      mockStore.bills().create = jest.fn().mockRejectedValue(expectedError);
+      await expect(mockStore.bills().create()).rejects.toEqual(expectedError);
+      try {
+        await mockStore.bills().create();
+      } catch (e) {
+        console.error(e);
+        expect(e).toEqual(expectedError);
+      }
+      expect(spyConsoleError).toHaveBeenCalledWith(expectedError);
+    });
   });
 });
