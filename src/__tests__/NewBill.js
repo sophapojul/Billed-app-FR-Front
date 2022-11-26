@@ -60,6 +60,8 @@ describe('Given I am connected as an employee', () => {
       input.addEventListener('change', handleChangeFile);
       fireEvent.change(input, { target: { files: [file] } });
       userEvent.upload(input, file);
+      expect(input.files.length).toBe(1);
+      expect(input.files[0].name).toBe('test.png');
       expect(handleChangeFile).toHaveBeenCalledTimes(2);
     });
     it('should submit new bill when I fill correctly fields', async () => {
@@ -97,7 +99,7 @@ describe('Given I am connected as an employee', () => {
         target: { value: '20' },
       });
       fireEvent.change(screen.getByTestId('pct'), {
-        target: {},
+        target: { value: undefined },
       });
       fireEvent.change(screen.getByTestId('commentary'), {
         target: { value: 'test' },
@@ -106,11 +108,8 @@ describe('Given I am connected as an employee', () => {
       newBill.fileUrl = 'http://localhost:3000/test.jpeg';
       const submitButton = screen.getByText('Envoyer');
       submitButton.addEventListener('click', handleSubmit);
-      expect(screen.getByTestId('pct').value).toBe('');
       fireEvent.submit(form);
       expect(handleSubmit).toBeCalledTimes(1);
-      // const spyUpdateBill = jest.spyOn(newBill, 'updateBill');
-      // expect(spyUpdateBill).toHaveBeenCalled();
     });
   });
 });
