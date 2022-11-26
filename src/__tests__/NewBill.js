@@ -139,5 +139,22 @@ describe('Given I am connected as an employee', () => {
       }
       expect(spyConsoleError).toHaveBeenCalledWith(expectedError);
     });
+    it('should call updateBill', async () => {
+      const newBill = {
+        email: 'a@a',
+        type: 'Restaurants et bars',
+        name: 'test',
+        amount: 100,
+        date: '2021-03-01',
+        vat: '20',
+        pct: 20,
+        commentary: 'test',
+        fileUrl: 'http://localhost:3000/test.jpeg',
+        fileName: 'test.jpeg',
+        status: 'pending',
+      };
+      mockStore.bills().update = jest.fn().mockResolvedValue(newBill);
+      await expect(mockStore.bills().update()).resolves.toEqual(newBill);
+    });
   });
 });
