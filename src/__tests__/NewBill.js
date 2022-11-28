@@ -6,9 +6,10 @@ import { fireEvent, screen } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import NewBillUI from '../views/NewBillUI';
 import NewBill from '../containers/NewBill';
+import { ROUTES, ROUTES_PATH } from '../constants/routes';
 import { localStorageMock } from '../__mocks__/localStorage';
 import mockStore from '../__mocks__/store';
-import { ROUTES } from '../constants/routes';
+import router from '../app/Router.js';
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on NewBill Page', () => {
@@ -174,5 +175,112 @@ describe('Given I am connected as an employee', () => {
       expect(spyConsoleError).toHaveBeenCalledWith(expectedError);
       spyConsoleError.mockRestore();
     });
+  });
+});
+
+describe('integration test post', () => {
+  it('should post a new bill', async () => {
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+    });
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee',
+      email: 'a@a',
+    }));
+    document.body.innerHTML = NewBillUI();
+    const newBill = new NewBill({
+      document,
+      onNavigate,
+      store: mockStore,
+      localStorage: window.localStorage,
+    });
+    const form = screen.getByTestId('form-new-bill');
+    const newData = {
+      type: 'Restaurants et bars',
+      name: 'test',
+      amount: 100,
+      date: '2021-03-01',
+      vat: '20',
+      pct: 20,
+      commentary: 'test',
+      fileUrl: 'http://localhost:3000/test.jpeg',
+      fileName: 'test.jpeg',
+    };
+    const spyHandleSubmit = jest.spyOn(newBill, 'handleSubmit');
+    // const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+    const spyUpdateBill = jest.spyOn(newBill, 'updateBill');
+    newBill.fileName = 'test.jpeg';
+    newBill.fileUrl = 'http://localhost:3000/test.jpeg';
+    newBill.status = 'pending';
+    fireEvent.change(screen.getByTestId('expense-type'), {
+      target: { value: newData.type },
+    });
+    fireEvent.change(screen.getByTestId('expense-name'), {
+      target: { value: newData.name },
+    });
+    fireEvent.change(screen.getByTestId('datepicker'), {
+      target: { value: newData.date },
+    });
+    fireEvent.change(screen.getByTestId('amount'), {
+      target: { value: newData.amount },
+    });
+    fireEvent.change(screen.getByTestId('vat'), {
+      target: { value: newData.vat },
+    });
+    fireEvent.change(screen.getByTestId('pct'), {
+      target: { value: newData.pct },
+    });
+    fireEvent.change(screen.getByTestId('commentary'), {
+      target: { value: newData.commentary },
+    });
+    form.addEventListener('click', spyHandleSubmit);
+    fireEvent.click(form);
+    expect(spyHandleSubmit).toHaveBeenCalled();
+    expect(spyHandleSubmit).toHaveBeenCalledTimes(1);
+    expect(spyUpdateBill).toHaveBeenCalled();
+    expect(spyUpdateBill).toHaveBeenCalledTimes(1);
+    // expect(screen.getByText(/test/i)).toBeInTheDocument();
+  });
+  it('should display a new bill', async () => {
+    jest.spyOn(mockStore, 'bills');
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+    });
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee',
+      email: 'a@a',
+    }));
+    const root = document.createElement('div');
+    root.setAttribute('id', 'root');
+    document.body.appendChild(root);
+    router();
+    const createdBill = { fileUrl: 'https://localhost:3456/images/test.jpg', key: '1234' };
+    mockStore.bills.mockImplementationOnce(() => ({
+      create: () => Promise.resolve(createdBill),
+    }));
+    const updatedBill = {
+      id: '47qAXb6fIm2zOKkLzMro',
+      vat: '80',
+      fileUrl: 'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a',
+      status: 'pending',
+      type: 'Hôtel et logement',
+      commentary: 'séminaire billed',
+      name: 'encore',
+      fileName: 'preview-facture-free-201801-pdf-1.jpg',
+      date: '2004-04-04',
+      amount: 400,
+      commentAdmin: 'ok',
+      email: 'a@a',
+      pct: 20,
+    };
+    mockStore.bills.mockImplementationOnce(() => ({
+      update: () => Promise.resolve(updatedBill),
+    }));
+    await new Promise(process.nextTick);
+    window.onNavigate(ROUTES_PATH.Bills);
+    // expect(await screen.getByText(/mes notes de frais/i)).toBeInTheDocument();
   });
 });
